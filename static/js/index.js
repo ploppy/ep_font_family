@@ -1,6 +1,10 @@
 var $, jQuery;
 var $ = require('ep_etherpad-lite/static/js/rjquery').$;
-var fonts = ["fontarial", "fonttimes-new-roman", "fontcalibri", "fonthelvetica", "fontcourier", "fontpalatino", "fontgaramond", "fontbookman", "fontavant-garde"];
+var fonts = [
+  // ep attr name, display name, font family
+  ["fontcomic-sans", "Comic Sans", "Comic Sans W99 Script"]
+];
+var fontAttrs = ["fontcomic-sans"];  // !!!: should be an ES6 comprehension
 
 /*****
 * Basic setup
@@ -10,17 +14,14 @@ var fonts = ["fontarial", "fonttimes-new-roman", "fontcalibri", "fonthelvetica",
 exports.postAceInit = function(hook, context){
   var fontFamily = $('.family-selection');
   $.each(fonts, function(k, font){
-    font = font.substring(4);
-    var fontString = capitaliseFirstLetter(font)
-    fontString = fontString.split("-").join(" ");
-    fontFamily.append("<option value='font"+font+"'>"+fontString+"</option>");
+    fontFamily.append("<option value='"+font[0]+"'>"+font[1]+"</option>");
   });
   fontFamily.on('change', function(){
     var value = $(this).val();
     context.ace.callWithAce(function(ace){
       // remove all other attrs
       $.each(fonts, function(k, v){
-        ace.ace_setAttributeOnSelection(v, false);
+        ace.ace_setAttributeOnSelection(v[0], false);
       });
       ace.ace_setAttributeOnSelection(value, true);
     },'insertfontFamily' , true);
@@ -66,9 +67,9 @@ exports.aceEditEvent = function(hook, call, cb){
     // the caret is in a new position.. Let's do some funky shit
     $('.subscript > a').removeClass('activeButton');
     $.each(fonts, function(k,v){
-      if ( call.editorInfo.ace_getAttributeOnSelection(v) ) {
+      if ( call.editorInfo.ace_getAttributeOnSelection(v[0]) ) {
         // show the button as being depressed.. Not sad, but active..
-        $('.family-selection').val(v);
+        $('.family-selection').val(v[0]);
       }
     });
   },250);
@@ -81,7 +82,7 @@ exports.aceEditEvent = function(hook, call, cb){
 // Our fontFamily attribute will result in a class
 // I'm not sure if this is actually required..
 exports.aceAttribsToClasses = function(hook, context){
-  if(fonts.indexOf(context.key) !== -1){
+  if(fontAttrs.indexOf(context.key) !== -1){
     return [context.key];
   }
 }
@@ -89,14 +90,14 @@ exports.aceAttribsToClasses = function(hook, context){
 // Block elements
 // I'm not sure if this is actually required..
 exports.aceRegisterBlockElements = function(){
-  return fonts;
+  return fontAttrs;
 }
 
 // Register attributes that are html markup / blocks not just classes
 // This should make export export properly IE <sub>helllo</sub>world
 // will be the output and not <span class=sub>helllo</span>
 exports.aceAttribClasses = function(hook, attr){
-  $.each(fonts, function(k, v){
+  $.each(fontAttrs, function(k, v){
     attr[v] = 'tag:'+v;
   });
   return attr;
@@ -108,4 +109,8 @@ exports.aceEditorCSS = function(hook_name, cb){
 
 function capitaliseFirstLetter(string){
   return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+exports.aceInitInnerdocbodyHead = function(hook_name, ctx){
+  ctx.iframeHTML.push("<link type=\"text/css\" rel=\"stylesheet\" href=\"//fast.fonts.net/cssapi/23b72026-17f0-46a9-9d42-a211fc781ab2.css\" />");
 }
